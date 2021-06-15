@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\API\BaseController as BaseController;
+use App\Mail\NewEmail;
+use Validator;
+use Exception;
+
+class EmailController extends BaseController
+{
+    public function sendEmail(Request $request) {
+        $validator = Validator::make($request->all(), [
+			'to' => 'required|email',
+            'from' => 'required|email',
+            'subject' => 'required',
+            'message' => 'required',
+        ]);
+        
+        if ($validator->fails()) {
+            $message = $validator->errors()->getMessages();
+            // $status = 501;
+            // return response()->json( ['status' => false, 'message' => $validator->errors()->getMessages()], 501);
+            return $this->sendError('Error validation', $message); 
+        } else {
+                //$email =  $request->json()->all();
+                //$to = $email['to'];
+                //$from = $email['from'];
+                //$subject = $email['subject'];
+                //$content = $email['message'];
+                $to = $request->to;
+                $from = $request->from;
+                $subject = $request->subject;
+                $content = $request->content;
+
+                try {
+                    Mail::to($to)->send(new NewEmail($from, $subject, $content));
+                    // $status = 200;
+                    return $this->sendResponse($to, 'Email has been sent OK');
+                } catch (Exception $exception) {
+                    // $status = 554;
+                    return $this->sendError('Error sending the email', 'Email has not been sent. Error: ' . $exception->getMessage());
+                }
+            }
+
+      //return response()->json($message, $status);
+    }
+}
